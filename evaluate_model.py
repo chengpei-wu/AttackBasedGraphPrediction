@@ -10,7 +10,7 @@ from utils.attack_utils import *
 from utils.data_utils import collate_graphs, collate_tensors, get_data_from_dataset
 
 
-def evaluate_model(model_name, dataset, fold=10, times=10, epoches=150):
+def evaluate_model(model_name, dataset, fold=10, times=10, epoches=300):
     # config GPU
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     # load data
@@ -22,6 +22,7 @@ def evaluate_model(model_name, dataset, fold=10, times=10, epoches=150):
         collate_fn = collate_graphs
     scores = []
     for time in range(times):
+        valid_curves = []
         # K-fold split
         kf = StratifiedKFold(n_splits=fold, shuffle=True)
         cv = 0
@@ -42,8 +43,8 @@ def evaluate_model(model_name, dataset, fold=10, times=10, epoches=150):
             cv += 1
             data_train, data_test = data[train_index], data[test_index]
             # len_train = int(len(data_train) * 0.9)
-            train_loader = DataLoader(data_train, batch_size=256, shuffle=True, collate_fn=collate_fn)
-            test_loader = DataLoader(data_test, batch_size=64, shuffle=False, collate_fn=collate_fn)
+            train_loader = DataLoader(data_train, batch_size=128, shuffle=True, collate_fn=collate_fn)
+            test_loader = DataLoader(data_test, batch_size=128, shuffle=False, collate_fn=collate_fn)
             # valid_loader = DataLoader(data_train[len_train:], batch_size=256, shuffle=False, collate_fn=collate_fn)
             if model_name == 'mlp':
                 model = MLP(
@@ -65,9 +66,10 @@ def evaluate_model(model_name, dataset, fold=10, times=10, epoches=150):
                 val_loader=test_loader,
                 max_epoch=epoches
             )
-            print(valid_curve)
+            valid_curves.append(valid_curve)
             model = torch.load(save_path)
             acc = evaluate(test_loader, device, model)
             scores.append(acc)
             print(scores)
-    np.save(f'./accuracy/{model_name}_{dataset}', np.array(scores))
+        np.save(f'./accuracy/valid_{model_name}_{dataset}', np.array(valid_curves))
+    np.save(f'./accuracy/score_{model_name}_{dataset}', np.array(scores))

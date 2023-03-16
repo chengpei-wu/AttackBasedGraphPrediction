@@ -45,7 +45,7 @@ class GIN(nn.Module):
                 self.linear_prediction.append(nn.Linear(hidden_dim, output_dim))
         self.drop = nn.Dropout(0.5)
         self.pool = (
-            AvgPooling()
+            SumPooling()
         )  # change to mean readout (AvgPooling) on social network datasets
 
     def forward(self, g):

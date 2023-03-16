@@ -2,7 +2,6 @@ import dgl
 import networkx as nx
 import numpy as np
 import torch
-from sklearn.preprocessing import MinMaxScaler
 
 from utils.network_utils import get_graph_tensor_from_node_importance, cal_node_importance
 from utils.pooling_params import pooling_sizes
@@ -29,17 +28,16 @@ def get_data_from_dataset(dataset, convert2tensor=True, node_importance=False):
 def Graphs2Tensor(graphs, pooling_sizes):
     tensors = []
     x = []
-    scaler = MinMaxScaler()
     for i, (graph, label) in enumerate(graphs):
         print_progress(i, len(graphs), prefix='converting graph to tensor: ')
         G = nx.Graph(dgl.to_networkx(graph))
         x.append(get_graph_tensor_from_node_importance(
-            graph=G, measure='controllability', pooling_sizes=pooling_sizes
+            graph=G, measure='both', pooling_sizes=pooling_sizes
         ))
         tensors.append({
             'label': label
         })
-    x = scaler.fit_transform(x)
+    x = np.array(x)
     for t in range(len(tensors)):
         tensors[t]['graph_tensor'] = x[t]
     return np.array(tensors, dtype=object), x
