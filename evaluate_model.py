@@ -1,6 +1,7 @@
 import torch
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.svm import SVC
 from torch.utils.data import DataLoader
 
 from models.GIN import GIN
@@ -10,12 +11,12 @@ from utils.attack_utils import *
 from utils.data_utils import collate_graphs, collate_tensors, get_data_from_dataset
 
 
-def evaluate_model(model_name, dataset, fold=10, times=10, epoches=300):
+def evaluate_model(model_name, dataset, fold=10, times=10, epoches=300, ):
     # config GPU
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     # load data
     if model_name in ['mlp', 'rf', 'svm', 'gbdt']:
-        data, labels, num_classes, X = get_data_from_dataset(dataset, convert2tensor=True)
+        data, labels, num_classes, X = get_data_from_dataset(dataset, convert2tensor=True, tensor_from='property')
         collate_fn = collate_tensors
     else:
         data, labels, num_classes = get_data_from_dataset(dataset, convert2tensor=False, node_importance=True)
@@ -30,13 +31,22 @@ def evaluate_model(model_name, dataset, fold=10, times=10, epoches=300):
             rfc = RandomForestClassifier(oob_score=True)
             cv_score = cross_val_score(rfc, X, labels.squeeze(), cv=kf, scoring='accuracy')
             scores.append(cv_score)
-            print(np.mean(scores))
+            print(scores, np.mean(scores))
             continue
+        if model_name == 'svm':
+            svc = SVC(
+                kernel='rbf'
+            )
+            cv_score = cross_val_score(svc, X, labels.squeeze(), cv=kf, scoring='accuracy')
+            scores.append(cv_score)
+            print(scores, np.mean(scores))
+            continue
+
         if model_name == 'gbdt':
-            gbdt = RandomForestClassifier(oob_score=True)
+            gbdt = GradientBoostingClassifier()
             cv_score = cross_val_score(gbdt, X, labels.squeeze(), cv=kf, scoring='accuracy')
             scores.append(cv_score)
-            print(np.mean(scores))
+            print(scores, np.mean(scores))
             continue
 
         for train_index, test_index in kf.split(data, labels):
@@ -48,12 +58,12 @@ def evaluate_model(model_name, dataset, fold=10, times=10, epoches=300):
             # valid_loader = DataLoader(data_train[len_train:], batch_size=256, shuffle=False, collate_fn=collate_fn)
             if model_name == 'mlp':
                 model = MLP(
-                    input_size=93,
+                    input_size=X.shape[1],
                     output_size=num_classes
                 )
             if model_name == 'gin':
                 model = GIN(
-                    input_dim=3,
+                    input_dim=data[0][0].ndata['importance'].shape[1],
                     hidden_dim=16,
                     output_dim=num_classes
                 )
@@ -70,6 +80,6 @@ def evaluate_model(model_name, dataset, fold=10, times=10, epoches=300):
             model = torch.load(save_path)
             acc = evaluate(test_loader, device, model)
             scores.append(acc)
-            print(scores)
+        print(scores)
         np.save(f'./accuracy/valid_{model_name}_{dataset}', np.array(valid_curves))
     np.save(f'./accuracy/score_{model_name}_{dataset}', np.array(scores))

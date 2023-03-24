@@ -1,3 +1,3 @@
 from evaluate_model import evaluate_model
 
-evaluate_model('rf', 'MUTAG', 10, 1)
+evaluate_model('mlp', 'PTC_MR', 10, 1)

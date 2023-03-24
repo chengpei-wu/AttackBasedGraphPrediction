@@ -28,7 +28,7 @@ def cal_node_importance(graph: nx.Graph, max_hop=3, measure='controllability'):
         temp_importance = []
         temp_importance1 = []
         subgraphs = extract_k_hop_subgraphs(graph, k)
-        if measure != 'both':
+        if measure != 'all':
             for node, g in zip(graph.nodes, subgraphs):
                 temp_importance.append(node_importance_in_subgraph(node, g, measure=measure))
             importance.append(temp_importance)

@@ -10,3 +10,16 @@ pooling_sizes = {
     'REDDIT-BINARY': [1, 2, 4, 8, 16, 32, 64, 128, 256, 512],
     'REDDIT-MULTI-5K': [1, 2, 4, 8, 16, 32, 128, 256, 512, 780],
 }
+
+attack_measures = [
+    'controllability',
+    'connectivity',
+    'average_degree',
+    'betweenness',
+    'clustering',
+    'communication_ability',
+    'spectral_radius',
+    # 'spectral_gap',
+    'natural_connectivity',
+    'algebraic_connectivity',
+]
